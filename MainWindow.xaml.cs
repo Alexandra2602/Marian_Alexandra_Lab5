@@ -36,6 +36,7 @@ namespace Marian_Alexandra_Lab5
         ActionState action = ActionState.Nothing;
         AutoLotEntitiesModel ctx = new AutoLotEntitiesModel();
         CollectionViewSource customerVSource;
+        CollectionViewSource inventoryVSource;
         CollectionViewSource customerOrdersVSource;
         public MainWindow()
         {
@@ -48,9 +49,13 @@ namespace Marian_Alexandra_Lab5
             
             customerVSource = ((System.Windows.Data.CollectionViewSource)(this.FindResource("customerViewSource")));
             customerVSource.Source = ctx.Customers.Local;
-            customerOrdersVSource = ((System.Windows.Data.CollectionViewSource)(this.FindResource("customerOrdersViewSource")));
-           // customerOrdersVSource.Source = ctx.Orders.Local;
             ctx.Customers.Load();
+
+            inventoryVSource = ((System.Windows.Data.CollectionViewSource)(this.FindResource("inventoryViewSource")));
+            inventoryVSource.Source = ctx.Inventories.Local;
+            customerOrdersVSource = ((System.Windows.Data.CollectionViewSource)(this.FindResource("customerOrdersViewSource")));
+            // customerOrdersVSource.Source = ctx.Orders.Local;
+            BindDataGrid();
             ctx.Orders.Load();
             ctx.Inventories.Load();
             cmbCustomers.ItemsSource = ctx.Customers.Local;
@@ -60,15 +65,21 @@ namespace Marian_Alexandra_Lab5
             //cmbInventory.DisplayMemberPath = "Make";
             cmbInventory.SelectedValuePath = "CarId";
 
-            BindDataGrid();
+          
         }
         private void btnAdd_Click(object sender, RoutedEventArgs e)
         {
+            action = ActionState.Edit;
+            BindingOperations.ClearBinding(firstNameTextBox, TextBox.TextProperty);
+            BindingOperations.ClearBinding(lastNameTextBox, TextBox.TextProperty);
             action = ActionState.New;
         }
         private void btnEdit_Click(object sender, RoutedEventArgs e)
         {
             action = ActionState.Edit;
+            BindingOperations.ClearBinding(firstNameTextBox, TextBox.TextProperty);
+            BindingOperations.ClearBinding(lastNameTextBox, TextBox.TextProperty);
+            SetValidationBinding();
         }
         private void btnDelete_Click(object sender, RoutedEventArgs e)
         {
@@ -141,12 +152,12 @@ namespace Marian_Alexandra_Lab5
 
         private void btnNext1_Click(object sender, RoutedEventArgs e)
         {
-            customerVSource.View.MoveCurrentToNext();
+           inventoryVSource.View.MoveCurrentToNext();
         }
 
         private void btnPrev1_Click(object sender, RoutedEventArgs e)
         {
-            customerVSource.View.MoveCurrentToPrevious();
+            inventoryVSource.View.MoveCurrentToPrevious();
         }
         private void SaveInventory()
         {
@@ -163,7 +174,7 @@ namespace Marian_Alexandra_Lab5
                     };
                     //adaugam entitatea nou creata in context
                     ctx.Inventories.Add(inventory);
-                   customerVSource.View.Refresh();
+                   inventoryVSource.View.Refresh();
                     //salvam modificarile
                     ctx.SaveChanges();
                 }
@@ -201,7 +212,7 @@ namespace Marian_Alexandra_Lab5
                 {
                     MessageBox.Show(ex.Message);
                 }
-                customerVSource.View.Refresh();
+                inventoryVSource.View.Refresh();
             }
         }
         private void gbOperations_Click(object sender, RoutedEventArgs e)
@@ -213,7 +224,7 @@ namespace Marian_Alexandra_Lab5
                 if (B != SelectedButton)
                     B.IsEnabled = false;
             }
-            gbActions.IsEnabled = true;
+            //gbActions.IsEnabled = true;
         }
         private void ReInitialize()
         {
@@ -222,7 +233,7 @@ namespace Marian_Alexandra_Lab5
             {
                 B.IsEnabled = true;
             }
-            gbActions.IsEnabled = false;
+            //gbActions.IsEnabled = false;
         }
         private void btnCancel_Click(object sender, RoutedEventArgs e)
         {
@@ -240,9 +251,11 @@ namespace Marian_Alexandra_Lab5
                     SaveInventory();
                     break;
                 case "Orders":
+                    SaveOrders();
                     break;
             }
             ReInitialize();
+            
         }
         private void SaveOrders()
         {
@@ -333,5 +346,28 @@ namespace Marian_Alexandra_Lab5
                              };
             customerOrdersVSource.Source = queryOrder.ToList();
         }
+
+        private void SetValidationBinding()
+        {
+            Binding firstNameValidationBinding = new Binding();
+            firstNameValidationBinding.Source = customerVSource;
+            firstNameValidationBinding.Path = new PropertyPath("FirstName");
+            firstNameValidationBinding.NotifyOnValidationError = true;
+            firstNameValidationBinding.Mode = BindingMode.TwoWay;
+            firstNameValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+            //string required
+            firstNameValidationBinding.ValidationRules.Add(new StringNotEmpty());
+            firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameValidationBinding);
+            Binding lastNameValidationBinding = new Binding();
+            lastNameValidationBinding.Source = customerVSource;
+            lastNameValidationBinding.Path = new PropertyPath("LastName");
+            lastNameValidationBinding.NotifyOnValidationError = true;
+            lastNameValidationBinding.Mode = BindingMode.TwoWay;
+            lastNameValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+            //string min length validator
+            lastNameValidationBinding.ValidationRules.Add(new StringMinLengthValidator());
+            lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameValidationBinding); //setare binding nou
+        }
     }
+    
 }
